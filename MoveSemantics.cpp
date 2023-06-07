@@ -2,11 +2,11 @@
 #include <format>
 #include <iostream>
 
-class NonMoveable
+class MoveExperiment
 {
 public:
   // class default c-tor
-  NonMoveable()
+  MoveExperiment()
   {
     mInstanceId = kInstanceId++;
 
@@ -14,32 +14,47 @@ public:
   }
 
   // class c-tor
-  NonMoveable(const char* aRes)
+  MoveExperiment(const char* aRes)
   {
     mInstanceId = kInstanceId++;
-    SetResource(aRes);
+    SetResource(aRes, false);
     Trace("Non-Default ctor");
   }
 
   // copy c-tor
-  NonMoveable(const NonMoveable& aOther)
-    : NonMoveable(aOther.mResource)
+  /* */
+  MoveExperiment(const MoveExperiment& aOther)
+    : MoveExperiment(aOther.mResource)
   {
     mInstanceId = kInstanceId++;
     Trace("Copy ctor");
   }
+  /* */
 
   // class d-tor
-  ~NonMoveable()
+  ~MoveExperiment()
   {
     Trace("Destructor");
 
     delete mResource;
   }
 
-  NonMoveable(NonMoveable&& aDisposable) = delete;
+  MoveExperiment(MoveExperiment&& aDisposable) = delete;
+  /*
+  {
+    mInstanceId = kInstanceId++;
 
-  void SetResource(const char* aNewData)
+    mResource = aDisposable.mResource;
+
+    aDisposable.mResource = nullptr;
+
+    Trace("Move ctor");
+  }
+  */
+
+  MoveExperiment& operator=(MoveExperiment&& aDisposable) = delete;
+
+  void SetResource(const char* aNewData, bool aTrace = true)
   {
     size_t newResLength = strlen(aNewData) + 1;
     char* newRes = new char[newResLength];
@@ -49,12 +64,17 @@ public:
 
     mResource = newRes;
 
-    // Trace("SetResource()");
+    if (aTrace)
+      Trace("SetResource()");
   }
 
-  const char* GetResource() { return mResource; }
+  const char* GetResource()
+  {
+    Trace("GetResource() ");
+    return mResource;
+  }
 
-  NonMoveable& operator=(const NonMoveable& aOther)
+  MoveExperiment& operator=(const MoveExperiment& aOther)
   {
     if (this != &aOther) {
       size_t newResLength = strlen(aOther.mResource) + 1;
@@ -70,13 +90,6 @@ public:
     }
     return *this;
   }
-  /*
-  NonMoveable& operator=(NonMoveable aOther) // unified assignment operator
-  {
-    swap(aOther);
-    return *this;
-  }
-  */
 
 private:
   inline static int kInstanceId = 1;
@@ -94,23 +107,27 @@ private:
   }
 };
 
-NonMoveable
+MoveExperiment
 GetSomething()
 {
-  return NonMoveable("GetSomething-default");
+  return MoveExperiment("GetSomething-default");
 }
 
-const NonMoveable
+const MoveExperiment
 GetSomethingConst()
 {
-  return NonMoveable("GetSomethingConst - returned something const");
+  return MoveExperiment("GetSomethingConst - returned something const");
 }
 
-NonMoveable
+MoveExperiment
 GetSomethingNonDefault()
 {
-  NonMoveable some("GetSomethingNonDefault - non-default");
+  MoveExperiment some("GetSomethingNonDefault - non-default");
   some.SetResource("Data set after c-tor");
+
+  int x = 9;
+  if (!x)
+    return MoveExperiment();
 
   return some; // Never use std::move to move automatic objects out of
                // functions.
@@ -121,23 +138,23 @@ main()
 {
   std::cout << "Hello Move semantics!\n";
   {
-    NonMoveable def;
-    NonMoveable some("some text");
-    NonMoveable copied(some);
+    MoveExperiment def;
+    MoveExperiment some("some text");
+    MoveExperiment copied(some);
   }
   std::cout << std::endl << std::endl;
 
   {
-    NonMoveable somethingReturned = GetSomething();
+    MoveExperiment somethingReturned = GetSomething();
   }
   std::cout << std::endl << std::endl;
 
   {
-    NonMoveable somethingConstReturned = GetSomethingConst();
+    MoveExperiment somethingConstReturned = GetSomethingConst();
   }
   std::cout << std::endl << std::endl;
   {
-    NonMoveable nonDef = GetSomethingNonDefault();
+    MoveExperiment nonDef = GetSomethingNonDefault();
     nonDef.GetResource();
   }
   std::cout << std::endl << std::endl;
