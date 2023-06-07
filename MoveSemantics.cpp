@@ -39,8 +39,8 @@ public:
     delete mResource;
   }
 
-  MoveExperiment(MoveExperiment&& aDisposable) = delete;
-  /*
+  /* */
+  MoveExperiment(MoveExperiment&& aDisposable)
   {
     mInstanceId = kInstanceId++;
 
@@ -50,7 +50,7 @@ public:
 
     Trace("Move ctor");
   }
-  */
+  /* */
 
   MoveExperiment& operator=(MoveExperiment&& aDisposable) = delete;
 
@@ -100,7 +100,7 @@ private:
   void Trace(const char* aLabel)
   {
     std::cout << std::format(
-      "{:25} from instance: {}. Current resource is: \"{}\"\n",
+      "{:25} from instance: {:2}. Current resource is: \"{}\"\n",
       aLabel,
       mInstanceId,
       (mResource ? mResource : ""));
@@ -125,12 +125,26 @@ GetSomethingNonDefault()
   MoveExperiment some("GetSomethingNonDefault - non-default");
   some.SetResource("Data set after c-tor");
 
+  /* */
   int x = 9;
   if (!x)
     return MoveExperiment();
+  /*  */
 
   return some; // Never use std::move to move automatic objects out of
                // functions.
+}
+
+void
+ReceiveMoveable(MoveExperiment&& aDisposable)
+{
+  std::cout << "Entering ReceiveMoveable " << std::endl;
+  ;
+
+  aDisposable.GetResource();
+
+  MoveExperiment local(std::move(aDisposable));
+  local.GetResource();
 }
 
 int
@@ -156,6 +170,14 @@ main()
   {
     MoveExperiment nonDef = GetSomethingNonDefault();
     nonDef.GetResource();
+  }
+  std::cout << std::endl << std::endl;
+  {
+    ReceiveMoveable(MoveExperiment("inline"));
+
+    MoveExperiment second("second");
+
+    ReceiveMoveable(std::move(second));
   }
   std::cout << std::endl << std::endl;
 }
