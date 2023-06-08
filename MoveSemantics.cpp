@@ -1,6 +1,7 @@
 
 #include <format>
 #include <iostream>
+#include "BlockFormatter.h"
 
 class MoveExperiment
 {
@@ -39,7 +40,9 @@ public:
     delete mResource;
   }
 
-  /* */
+  //MoveExperiment(MoveExperiment&& aDisposable) = delete;
+
+  /* * /
   MoveExperiment(MoveExperiment&& aDisposable)
   {
     mInstanceId = kInstanceId++;
@@ -91,11 +94,24 @@ public:
     return *this;
   }
 
+  bool StealFrom(MoveExperiment&& aOther)
+  {
+    Trace("StealFrom-Before stealing");
+
+    mResource = aOther.mResource;
+    aOther.mResource = nullptr;
+
+    Trace("StealFrom-After stealing");
+
+    return true;
+  }
+
 private:
   inline static int kInstanceId = 1;
 
-  char* mResource{};
   int mInstanceId = 0;
+
+  char* mResource{};
 
   void Trace(const char* aLabel)
   {
@@ -122,8 +138,8 @@ GetSomethingConst()
 MoveExperiment
 GetSomethingNonDefault()
 {
-  MoveExperiment some("GetSomethingNonDefault - non-default");
-  some.SetResource("Data set after c-tor");
+  MoveExperiment some("GetSomethingNonDefault - non-default some");
+  some.SetResource("Data set after c-tor some");
 
   /* */
   int x = 9;
@@ -139,7 +155,6 @@ void
 ReceiveMoveable(MoveExperiment&& aDisposable)
 {
   std::cout << "Entering ReceiveMoveable " << std::endl;
-  ;
 
   aDisposable.GetResource();
 
@@ -150,34 +165,56 @@ ReceiveMoveable(MoveExperiment&& aDisposable)
 int
 main()
 {
-  std::cout << "Hello Move semantics!\n";
+  std::cout << "Hello Move semantics!\n" << std::endl;
   {
+    TRACE_BLOCK;
     MoveExperiment def;
     MoveExperiment some("some text");
     MoveExperiment copied(some);
   }
-  std::cout << std::endl << std::endl;
-
   {
+    TRACE_BLOCK;
     MoveExperiment somethingReturned = GetSomething();
   }
-  std::cout << std::endl << std::endl;
-
   {
+    TRACE_BLOCK;
     MoveExperiment somethingConstReturned = GetSomethingConst();
   }
-  std::cout << std::endl << std::endl;
   {
+    TRACE_BLOCK;
     MoveExperiment nonDef = GetSomethingNonDefault();
     nonDef.GetResource();
   }
-  std::cout << std::endl << std::endl;
   {
+    TRACE_BLOCK;
     ReceiveMoveable(MoveExperiment("inline"));
 
     MoveExperiment second("second");
 
     ReceiveMoveable(std::move(second));
   }
-  std::cout << std::endl << std::endl;
+  {
+    TRACE_BLOCK;
+    MoveExperiment m("member function");
+    MoveExperiment other("other for member function");
+
+    m.StealFrom(std::move(other));
+  }
+
+  {
+    /* * /
+    struct Foo
+    {
+      auto func() && {}
+    };
+
+    auto a = Foo{};
+
+    a.func(); // Doesn't compile, 'a' is not an rvalue
+
+    std::move(a).func(); // Compiles
+
+    Foo{}.func(); // Compiles
+    /* */
+  }
 }
